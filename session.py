@@ -24,15 +24,42 @@ class Session:
     async def fetch(self, url:str, path:str):
         with open(path, 'wb') as file:
             async with self.session.get(url, proxy=self.proxy) as rsp:
-                st = time.time()
-                counter = 0
-                u = 1024*1024*5
+                size_all = rsp.headers["Content-Length"]
+                size_done = 0
+                time_st = time.time()
+                speedqueue = [{'time':time_st, 'size': 0}]
+                speedSize = 20
+                cache = bytes()
+                filename = os.path.split(path)[1]
+                purename = filename[filename.find('-', filename.find('-') + 1) + 2:]
+                logname = purename
+                if len(logname) > 34:
+                    logname = logname[:15] + '...' + logname[-19:]
                 while 1:
-                    chuck = await rsp.content.read(u)
+                    chuck = await rsp.content.read(1000000)
                     if not chuck:
+                        file.write(cache)
                         break
-                    file.write(chuck)
-                    counter = counter + 1
-                    dis = time.time() - st + 1
-                    size = counter * 5
-                    print(str(size / dis) + " M/s, " + str(size))
+                    size_done += len(chuck)
+                    cache = cache + chuck
+                    if len(cache) > 3000000:
+                        file.write(cache)
+                        cache = bytes()
+                    speedqueue.append({'time':time.time(), 'size':size_done})
+                    log = logname + ' | ' + self.sizeByte2Str(size_done) + '/' + self.sizeByte2Str(int(size_all))
+                    if len(speedqueue) > speedSize:
+                        sizediff = speedqueue[-1]['size'] - speedqueue[0]['size']
+                        timediff = speedqueue[-1]['time'] - speedqueue[0]['time']
+                        speed = sizediff / timediff
+                        log = log + ' | ' + self.sizeByte2Str(speed) + '/s'
+                        speedqueue.pop(0)
+                    print(log)
+
+    def sizeByte2Str(self, size):
+        if size > 1024*1024:
+            return "%.2f"%(size / (1024 * 1024)) + 'M'
+        else:
+            return "%.2f"%(size / 1024) + 'K'
+                
+                        
+                    

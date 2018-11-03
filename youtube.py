@@ -9,6 +9,7 @@ from login.youtube import YoutubeLoginHelper
 from session import Session
 import asyncio
 import json
+from enum import Enum, unique
 
 def logfile(content, filename):
     with open(filename, 'w', encoding='utf-8') as f:
@@ -23,11 +24,15 @@ class YoutubeSession:
         }
 
         if needlogin:
-            with open('user.json', 'r') as f:
-                username = f.readline().strip()
-                password = f.readline().strip()
+            username = None
+            password = None
+            if os.path.isfile('user.json'):
+                with open('user.json', 'r') as f:
+                    username = f.readline().strip()
+                    password = f.readline().strip()
             param = (username, password) if password else self.inputUserInfo()
-            cookies = YoutubeLoginHelper(*param).login().getCookie() 
+            (username, password) = param
+            cookies = YoutubeLoginHelper(*param).login().getCookie()
             self.session = Session(cookies, headers)
             self.username = username if cookies else None
         else:
@@ -81,17 +86,20 @@ class YoutubeDownloader:
                         return
                     else:
                         await self.downloadV(v)
-                        return 
-        except Exception:
-            pass
-        print('parse url err: ' + url)
+                        return
+        except Exception as err:
+            print(err)
+        # logfile append
+        print('download url fail: ' + url)
 
     async def addVList(self, path):
         print('will add vlist: ' + path)
+        tasks = None
         with open(path, 'r') as file:
             lines = file.readlines()
-            for line in lines:
-                await self.downloadPath(line)
+            tasks = [asyncio.ensure_future(self.downloadPath(line)) for line in lines]
+        if tasks:
+            await asyncio.wait(tasks)
 
     async def addChannel(self, url):
         print('will add channel: ' + url)
@@ -100,7 +108,7 @@ class YoutubeDownloader:
         print('will add playlist: ' + url)
 
     async def downloadV(self, v):
-        print('will downloadV v=' + v)
+        print('will download v=' + v)
         while self.curTaskNum >= self.maxTaskNum:
             await asyncio.sleep(2)
         self.curTaskNum = self.curTaskNum + 1
@@ -121,32 +129,83 @@ class YoutubeDownloader:
         j = json.loads(config)
         player_response = json.loads(j['args']['player_response'])
         videoDetails = player_response['videoDetails']
-        formats = player_response['streamingData']['formats']
+        formats = player_response['streamingData']['formats'] + player_response['streamingData']['adaptiveFormats']
         title = videoDetails['title']
         pureTitle = self.removeInvalidFilenameChars(title)
         channel = videoDetails['channelId']
-        author = videoDetails['author']
         filename = channel + ' - ' + v + ' - ' + pureTitle
+        maxVideo = None
+        maxAudio = None
+        for fmt in formats:
+            mediaType = None
+            if fmt['mimeType'].startswith('video/webm'):
+                mediaType = 'vwebm'
+            if fmt['mimeType'].startswith('audio/webm'):
+                mediaType = 'awebm'
+            if not mediaType:
+                continue
+            if mediaType == 'vwebm':
+                if not maxVideo:
+                    maxVideo = fmt
+                else:
+                    try:
+                        pixel_o = maxVideo['width'] * maxVideo['height']
+                        pixel_t = fmt['width'] * fmt['height']
+                        br_o = maxVideo['bitrate']
+                        br_t = fmt['bitrate']
+                        if pixel_o < pixel_t:
+                            maxVideo = fmt
+                        elif pixel_o == pixel_t:
+                            maxVideo = maxVideo if br_o > br_t else fmt
+                    except Exception as err:
+                        print(err)
+            if mediaType == 'awebm':
+                if not maxAudio:
+                    maxAudio = fmt
+                else:
+                    try:
+                        br_o = maxAudio['bitrate']
+                        br_t = fmt['bitrate']
+                        maxAudio = maxAudio if br_o > br_t else fmt
+                    except Exception as err:
+                        print(err)
+        filenameVideo = filename + '-video.webm'
+        filenameAudio = filename + '-audio.webm'
+        filenameMerge = filename + '.webm'
+        tasks = [
+            asyncio.ensure_future(self.session.fetch(maxVideo['url'], filenameVideo)),
+            asyncio.ensure_future(self.session.fetch(maxAudio['url'], filenameAudio))
+        ]
+        await asyncio.wait(tasks)
+        mergeCmd = 'ffmpeg -loglevel quiet -i \"' + filenameAudio + '\" -i \"' + filenameVideo + '\" -acodec copy -vcodec copy \"' + filenameMerge + '\"'
+        print(mergeCmd)
+        os.system(mergeCmd)
+        os.remove(filenameAudio)
+        os.remove(filenameVideo)
+        self.markDownloaded(v)
         
-        
-
     def checkExist(self, v):
         try:
             with open('donelist.vlst', 'r') as file:
-                return v in file.readlines()
-        except Exception:
-            pass
+                return (v + '\n') in file.readlines()
+        except Exception as err:
+            print(err)
         return False
 
+    def markDownloaded(self, v):
+        try:
+            with open('donelist.vlst', 'a') as file:
+                file.write(v + '\n')
+        except Exception as err:
+            print(err)
+
     def removeInvalidFilenameChars(self, filename):
-        return filename.translate(str.maketrans('','','\/:*?"<>|'))
-
-
+        return filename.translate(str.maketrans('','',r'\/:*?"<>|'))
 
 def asyncrun(future):
     asyncio.get_event_loop().run_until_complete(future)
 
-session = YoutubeSession(False)
+session = YoutubeSession()
 if not session.username:
     print('init failed! will exit.')
     exit()
