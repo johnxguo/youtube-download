@@ -15,7 +15,7 @@ class GoogleLoginHelper:
         self.waitDomTimeout = 10
         self.waitDomFrq = 0.2
         self.setUserInfo(uid, password)
-        print("create webdriver")
+        print("creating webdriver")
         chrome_options = webdriver.ChromeOptions()
         chrome_options.add_argument('headless')
         chrome_options.add_argument('--disable-gpu')
@@ -28,7 +28,7 @@ class GoogleLoginHelper:
     def __del__(self):
         self.driver.close()
         self.driver = None
-        print("close webdriver")
+        print("closing webdriver")
 
     def setUserInfo(self, uid:str, password:str):
         self.uid = uid
@@ -44,13 +44,13 @@ class GoogleLoginHelper:
             self.driver.get(self.signin_url)
             #self.driver.get_screenshot_as_file("./google-accounts-page.png")
             self.driver.find_element_by_name('identifier').send_keys(self.uid)
-            print("fill in username:" + self.uid)
+            print("filling in username:" + self.uid)
             self.driver.find_element_by_id('identifierNext').click()
             print("submit username, waitting password ready")
             WebDriverWait(self.driver, self.waitDomTimeout, self.waitDomFrq).until(
                 EC.element_to_be_clickable((By.NAME, "password"))
             )
-            print("fill in password")
+            print("filling in password")
             self.driver.find_element_by_name('password').send_keys(self.password)
             print("waitting submit btn ready")
             WebDriverWait(self.driver, self.waitDomTimeout, self.waitDomFrq).until(
@@ -83,7 +83,7 @@ class GoogleLoginHelper:
 
     def turnTo(self, url:str):
         if url:
-            print('turn to ' + url)
+            print('turning to ' + url)
             self.driver.get(url)
 
     def isLoginComplete(self, a):

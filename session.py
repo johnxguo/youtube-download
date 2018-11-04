@@ -5,9 +5,12 @@ import os
 import aiohttp
 import asyncio
 import time
+from speed import SpeedHelper
 
 class Session:
     def __init__(self, cookies, headers):
+        self.cacheSize = 3000000
+        self.chuckSize = 1000000
         self.proxy = 'http://127.0.0.1:1080'
         self.session = asyncio.get_event_loop().run_until_complete(self.create_session(cookies, headers))
 
@@ -15,51 +18,32 @@ class Session:
         asyncio.get_event_loop().run_until_complete(self.session.close())
 
     async def create_session(self, cookies, headers):
-        return aiohttp.ClientSession(cookies=cookies, headers=headers)
+        return aiohttp.ClientSession(cookies=cookies, headers=headers, timeout=aiohttp.ClientTimeout(total=100000))
 
     async def get(self, url:str):
         async with self.session.get(url, proxy=self.proxy) as rsp:
             return await rsp.text()
 
-    async def fetch(self, url:str, path:str):
+    async def fetch(self, url:str, path:str, handler:callable = None):
         with open(path, 'wb') as file:
             async with self.session.get(url, proxy=self.proxy) as rsp:
-                size_all = rsp.headers["Content-Length"]
-                size_done = 0
-                time_st = time.time()
-                speedqueue = [{'time':time_st, 'size': 0}]
-                speedSize = 20
+                speedHelper = SpeedHelper(90, int(rsp.headers["Content-Length"]))
+                counter = 0
                 cache = bytes()
-                filename = os.path.split(path)[1]
-                purename = filename[filename.find('-', filename.find('-') + 1) + 2:]
-                logname = purename
-                if len(logname) > 34:
-                    logname = logname[:15] + '...' + logname[-19:]
+                lastsize = 0
                 while 1:
-                    chuck = await rsp.content.read(1000000)
+                    chuck = await rsp.content.read(self.chuckSize)
                     if not chuck:
                         file.write(cache)
                         break
-                    size_done += len(chuck)
                     cache = cache + chuck
-                    if len(cache) > 3000000:
+                    if len(cache) > self.cacheSize:
                         file.write(cache)
                         cache = bytes()
-                    speedqueue.append({'time':time.time(), 'size':size_done})
-                    log = logname + ' | ' + self.sizeByte2Str(size_done) + '/' + self.sizeByte2Str(int(size_all))
-                    if len(speedqueue) > speedSize:
-                        sizediff = speedqueue[-1]['size'] - speedqueue[0]['size']
-                        timediff = speedqueue[-1]['time'] - speedqueue[0]['time']
-                        speed = sizediff / timediff
-                        log = log + ' | ' + self.sizeByte2Str(speed) + '/s'
-                        speedqueue.pop(0)
-                    print(log)
-
-    def sizeByte2Str(self, size):
-        if size > 1024*1024:
-            return "%.2f"%(size / (1024 * 1024)) + 'M'
-        else:
-            return "%.2f"%(size / 1024) + 'K'
-                
-                        
-                    
+                    counter = counter + 1
+                    speedHelper.mark(len(chuck))
+                    if counter % 100 == 0:
+                        if handler:
+                            size = speedHelper.size_done() - lastsize
+                            lastsize = speedHelper.size_done()
+                            handler(url, path, size, speedHelper.size_all(), speedHelper.size_done(), speedHelper.speed())
