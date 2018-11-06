@@ -6,6 +6,7 @@ from colorama import Fore, Back, Style, init
 
 init(autoreset=True)
 
-print(Fore.GREEN + 'some red text', end='')
-print(Fore.RED + 'some red text')
-print(Fore.YELLOW + 'some red text')
+try:
+    1 / 0
+except Exception as err:
+    print(Fore.GREEN + err)

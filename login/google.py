@@ -2,6 +2,7 @@
 #date: 2018-10-31
 
 import os
+import json
 from .state import LoginState
 from selenium import webdriver 
 from selenium.webdriver.common.by import By
@@ -10,6 +11,13 @@ from selenium.webdriver.support import expected_conditions as EC
 
 class GoogleLoginHelper:
     def __init__(self, uid:str, password:str):
+        self.cookiesFilename = 'google_login.cookies'
+        self.fileCookies = self.loadCookies()
+        if self.fileCookies:
+            print('google login from file succ! ')
+            self.state = LoginState.login_succ
+            self.driver = None
+            return
         self.signin_url = 'https://accounts.google.com/signin/v2/identifier?&flowName=GlifWebSignIn&flowEntry=ServiceLogin&cid=1&navigationDirection=forward'
         self.state = LoginState.logout
         self.waitDomTimeout = 10
@@ -26,9 +34,10 @@ class GoogleLoginHelper:
         self.driver = webdriver.Chrome(chromedriver, chrome_options=chrome_options)
 
     def __del__(self):
-        self.driver.close()
-        self.driver = None
-        print("closing webdriver")
+        if self.driver:
+            self.driver.close()
+            self.driver = None
+            print("closing webdriver")
 
     def setUserInfo(self, uid:str, password:str):
         self.uid = uid
@@ -60,7 +69,13 @@ class GoogleLoginHelper:
             print("submit login... , waitting response")
             WebDriverWait(self.driver, self.waitDomTimeout, self.waitDomFrq).until(self.isLoginComplete)
             self.state = LoginState.login_succ
-            print("google login succ!")
+            cookies = self.getCookie()
+            if bool(cookies):
+                print("google login succ!")
+                self.writeCookies(cookies)
+            else:
+                self.state = LoginState.login_fail
+                print("google login fail!")
         except:
             self.state = LoginState.login_fail
             print("google login fail!")
@@ -72,6 +87,8 @@ class GoogleLoginHelper:
     def getCookie(self):
         if not self.isLoginOk():
             return None
+        if self.fileCookies:
+            return self.fileCookies
         co = self.driver.get_cookies()
         names = []
         values = []
@@ -85,6 +102,10 @@ class GoogleLoginHelper:
         if url:
             print('turning to ' + url)
             self.driver.get(url)
+        if self.isLoginOk():
+            cookies = self.getCookie()
+            if bool(cookies):
+                self.writeCookies(cookies)
 
     def isLoginComplete(self, a):
         if not self.driver:
@@ -95,3 +116,13 @@ class GoogleLoginHelper:
                domain['name'] == 'SSID':
                 return True
         return False
+    
+    def writeCookies(self, cookies):
+        with open(self.cookiesFilename, 'w') as f:
+            f.write(json.dumps(cookies))
+
+    def loadCookies(self):
+        if os.path.isfile(self.cookiesFilename):
+            with open(self.cookiesFilename, 'r') as f:
+                return json.loads(f.read())
+        return None

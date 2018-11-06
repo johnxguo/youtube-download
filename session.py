@@ -11,6 +11,8 @@ class Session:
     def __init__(self, cookies, headers):
         self.cacheSize = 3000000
         self.chuckSize = 1000000
+        self.cookies = cookies
+        self.headers = headers
         self.proxy = 'http://127.0.0.1:1080'
         self.session = asyncio.get_event_loop().run_until_complete(self.create_session(cookies, headers))
 
@@ -22,6 +24,11 @@ class Session:
 
     async def get(self, url:str):
         async with self.session.get(url, proxy=self.proxy) as rsp:
+            return await rsp.text()
+    
+    async def getWithHeaders(self, url:str, headers):
+        headers = {**self.headers, **headers} 
+        async with self.session.get(url, proxy=self.proxy, headers=headers) as rsp:
             return await rsp.text()
 
     async def fetch(self, url:str, path:str, handler:callable = None):

@@ -1,0 +1,7 @@
+{
+	"maxTaskNum": 10,
+	"maxTaskCounter":1000,
+	"workpath": "./videos/",
+	"login": true,
+	"cmd": "1.vlst"
+}

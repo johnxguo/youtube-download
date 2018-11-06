@@ -2,6 +2,8 @@
 #date: 2018-10-31
 
 from .google import GoogleLoginHelper
+import os
+import json
 
 class YoutubeLoginHelper:
     def __init__(self, uid:str, password:str):
@@ -12,6 +14,8 @@ class YoutubeLoginHelper:
         self.googleLoginHelper.setUserInfo(uid, password)
 
     def login(self):
+        if self.isLoginOk():
+            return self
         self.googleLoginHelper.login().turnTo(self.initPageUrl)
         if self.isLoginOk():
             print('login youtube succ!')
