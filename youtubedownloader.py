@@ -121,6 +121,7 @@ class YoutubeDownloader:
         # other playlists, merge
 
     async def addPlaylist(self, url):
+        url = url.strip()
         print('will add playlist: ' + url)
         html = await self.session.get(url)
         try:
@@ -254,24 +255,27 @@ class YoutubeDownloader:
                 outptPath = self.workpath + filename + '.webm'
                 videoUrl = maxVideo['url']
                 audioUrl = maxAudio['url']
-                tasks = [
-                    asyncio.ensure_future(self.session.fetch(videoUrl, videoPath, self.fetchHandler)),
-                    asyncio.ensure_future(self.session.fetch(audioUrl, audioPath, self.fetchHandler))
-                ]
                 self.taskmap[videoUrl] = self.taskCounter
                 self.taskCounter = self.taskCounter + 1
                 self.taskmap[audioUrl] = self.taskCounter
                 self.taskCounter = self.taskCounter + 1
+                tasks = [
+                    asyncio.ensure_future(self.session.fetch(videoUrl, videoPath, self.fetchHandler)),
+                    asyncio.ensure_future(self.session.fetch(audioUrl, audioPath, self.fetchHandler))
+                ]
                 await asyncio.wait(tasks)
-                mergeCmd = 'ffmpeg -loglevel quiet -i \"' + audioPath + '\" -i \"' + videoPath + '\" -acodec copy -vcodec copy \"' + outptPath + '\"'
-                ColorHelper.print_purple('merging audio and video..')
-                os.system(mergeCmd)
-                os.remove(videoPath)
-                os.remove(audioPath)
-                self.markDownloaded(v)
+                if tasks[0].result() and tasks[1].result():
+                    mergeCmd = 'ffmpeg -loglevel quiet -i \"' + audioPath + '\" -i \"' + videoPath + '\" -acodec copy -vcodec copy \"' + outptPath + '\"'
+                    ColorHelper.print_purple('merging audio and video..')
+                    os.system(mergeCmd)
+                    self.markDownloaded(v)
+                    ColorHelper.print_green(outptPath + ' is done')
+                else:
+                    ColorHelper.print_red(r'network err! v=%s download fail!'%(v))
                 self.taskmap.pop(videoUrl)
                 self.taskmap.pop(audioUrl)
-                ColorHelper.print_green(outptPath + ' is done')
+                os.remove(videoPath)
+                os.remove(audioPath)
             except Exception as err:
                 ColorHelper.print_red(err)
         finally:
@@ -390,6 +394,7 @@ class YoutubeDownloader:
             counter = counter + 1
         logname = logname + ' '*(namelength - self.halfWidthLen(logname))
         ColorHelper.print_blue('downloading | ', False)
+        # percent
         log = logname + ' | ' + '%8s' % self.sizeByte2Str(size_done) + ' /' + '%8s' % self.sizeByte2Str(int(size_all)) + ' | ' + self.sizeByte2Str(speed) + '/s'
         colorPrint(log, False)
         ColorHelper.print_purple(' | ', False)

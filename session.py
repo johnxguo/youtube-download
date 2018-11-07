@@ -32,25 +32,30 @@ class Session:
             return await rsp.text()
 
     async def fetch(self, url:str, path:str, handler:callable = None):
-        with open(path, 'wb') as file:
-            async with self.session.get(url, proxy=self.proxy) as rsp:
-                speedHelper = SpeedHelper(90, int(rsp.headers["Content-Length"]))
-                counter = 0
-                cache = bytes()
-                lastsize = 0
-                while 1:
-                    chuck = await rsp.content.read(self.chuckSize)
-                    if not chuck:
-                        file.write(cache)
-                        break
-                    cache = cache + chuck
-                    if len(cache) > self.cacheSize:
-                        file.write(cache)
-                        cache = bytes()
-                    counter = counter + 1
-                    speedHelper.mark(len(chuck))
-                    if counter % 100 == 0:
-                        if handler:
-                            size = speedHelper.size_done() - lastsize
-                            lastsize = speedHelper.size_done()
-                            handler(url, path, size, speedHelper.size_all(), speedHelper.size_done(), speedHelper.speed())
+        try:
+            with open(path, 'wb') as file:
+                async with self.session.get(url, proxy=self.proxy) as rsp:
+                    speedHelper = SpeedHelper(90, int(rsp.headers["Content-Length"]))
+                    counter = 0
+                    cache = bytes()
+                    lastsize = 0
+                    while 1:
+                        chuck = await rsp.content.read(self.chuckSize)
+                        if not chuck:
+                            file.write(cache)
+                            break
+                        cache = cache + chuck
+                        if len(cache) > self.cacheSize:
+                            file.write(cache)
+                            cache = bytes()
+                        counter = counter + 1
+                        speedHelper.mark(len(chuck))
+                        if counter % 100 == 0:
+                            if handler:
+                                size = speedHelper.size_done() - lastsize
+                                lastsize = speedHelper.size_done()
+                                handler(url, path, size, speedHelper.size_all(), speedHelper.size_done(), speedHelper.speed())
+            return True
+        except Exception as err:
+            print(err)
+            return False
