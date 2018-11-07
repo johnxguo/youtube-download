@@ -265,7 +265,7 @@ class YoutubeDownloader:
                 ]
                 await asyncio.wait(tasks)
                 if tasks[0].result() and tasks[1].result():
-                    mergeCmd = 'ffmpeg -loglevel quiet -i \"' + audioPath + '\" -i \"' + videoPath + '\" -acodec copy -vcodec copy \"' + outptPath + '\"'
+                    mergeCmd = 'ffmpeg -loglevel quiet -nostdin -y -i \"' + audioPath + '\" -i \"' + videoPath + '\" -acodec copy -vcodec copy \"' + outptPath + '\"'
                     ColorHelper.print_purple('merging audio and video..')
                     os.system(mergeCmd)
                     self.markDownloaded(v)
