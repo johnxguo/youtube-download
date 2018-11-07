@@ -20,6 +20,9 @@ class YoutubeDownloader:
         self.taskCounter = 0
         self.maxTaskCounter = sys.maxsize
         self.workpath = './'
+        self.donefile = './youtube.donelist'
+        self.logsfile = './youtube.log'
+        self.stopfile = './stop'
         self.prefix_v = 'https://www.youtube.com/watch?v='
         self.prefix_channel = 'https://www.youtube.com/channel/'
         self.prefix_playlist = 'https://www.youtube.com/playlist?list='
@@ -46,7 +49,19 @@ class YoutubeDownloader:
     def setMaxTaskCounter(self, maxTaskCounter):
         self.maxTaskCounter = maxTaskCounter
         return self
+
+    def setDonefile(self, donefile):
+        self.donefile = donefile
+        return self
+
+    def setLogsfile(self, logsfile):
+        self.logsfile = logsfile
+        return self
     
+    def setStopfile(self, stopfile):
+        self.stopfile = stopfile
+        return self
+
     async def downloadPath(self, path):
         if path == '.':
             await self.addAllSelfPlayLists()
@@ -197,6 +212,9 @@ class YoutubeDownloader:
         if not self.canDownload(v):
             ColorHelper.print_yellow('exist! v=' + v)
             return False
+        if self.isStop():
+            ColorHelper.print_yellow('global stop!')
+            return False
         return True
 
     async def downloadV(self, v):
@@ -315,7 +333,7 @@ class YoutubeDownloader:
         
     def isExist(self, v):
         try:
-            with open('youtube.donelist', 'r') as file:
+            with open(self.donefile, 'r') as file:
                 return (v + '\n') in file.readlines()
         except Exception as err:
             ColorHelper.print_red(err)
@@ -323,7 +341,7 @@ class YoutubeDownloader:
 
     def markDownloaded(self, v):
         try:
-            with open('youtube.donelist', 'a') as file:
+            with open(self.donefile, 'a') as file:
                 file.write(v + '\n')
         except Exception as err:
             ColorHelper.print_red(err)
@@ -342,6 +360,12 @@ class YoutubeDownloader:
 
     def canDownload(self, v):
         return (not self.isExist(v)) and (not self.isDownloading(v))
+
+    def isStop(self):
+        if self.stopfile:
+            if os.path.isfile(self.stopfile):
+                return True
+        return False
     
     def removeInvalidFilenameChars(self, filename):
         return filename.translate(str.maketrans('','',r'\/:*?"<>|'))
@@ -349,7 +373,7 @@ class YoutubeDownloader:
     def logfile(self, content, pr = True):
         if pr:
             print(content)
-        with open('youtube.log', 'a', encoding='utf-8') as f:
+        with open(self.logsfile, 'a', encoding='utf-8') as f:
             f.write(str(content) + '\n')
 
     def fetchHandler(self, url, path, size, size_all, size_done, speed):

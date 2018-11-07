@@ -39,6 +39,12 @@ class YoutubeCmd:
             self.downloader.setMaxTaskCounter(self.config['maxTaskCounter'])
         if self.config['workpath']:
             self.downloader.setWorkPath(self.config['workpath'])
+        if self.config['donelist']:
+            self.downloader.setDonefile(self.config['donelist'])
+        if self.config['logsfile']:
+            self.downloader.setLogsfile(self.config['logsfile'])
+        if self.config['stopfile']:
+            self.downloader.setStopfile(self.config['stopfile'])
         ColorHelper.print_green("I'm ready!")
         if 'cmd' in self.config:
             print(self.session.username + ">" + self.config['cmd'])
@@ -88,6 +94,12 @@ class YoutubeCmd:
                         config['login'] = None
                     if not 'proxy' in config:
                         config['proxy'] = None
+                    if not 'donelist' in config:
+                        config['donelist'] = None
+                    if not 'stopfile' in config:
+                        config['stopfile'] = None
+                    if not 'logsfile' in config:
+                        config['logsfile'] = None
                     self.config = config
         except Exception as err:
             ColorHelper.print_red(r'load config[%s] fail, err:%s' % (self.configFile, str(err)))
