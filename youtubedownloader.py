@@ -223,43 +223,10 @@ class YoutubeDownloader:
             pureTitle = self.removeInvalidFilenameChars(title)
             channel = videoDetails['channelId']
             filename = channel + ' - ' + pureTitle + ' - ' + v
-            maxVideo = {}
-            maxAudio = {}
-            for fmt in formats:
-                mediaType = None
-                if fmt['mimeType'].startswith('video/webm'):
-                    mediaType = 'vwebm'
-                if fmt['mimeType'].startswith('audio/webm'):
-                    mediaType = 'awebm'
-                if not mediaType:
-                    continue
-                if mediaType == 'vwebm':
-                    if not bool(maxVideo):
-                        maxVideo = fmt
-                    else:
-                        try:
-                            pixel_o = maxVideo['width'] * maxVideo['height']
-                            pixel_t = fmt['width'] * fmt['height']
-                            if pixel_o < pixel_t:
-                                maxVideo = fmt
-                            elif pixel_o == pixel_t:
-                                if ('bitrate' in maxVideo) and ('bitrate' in fmt):
-                                    br_o = maxVideo['bitrate']
-                                    br_t = fmt['bitrate']
-                                    maxVideo = maxVideo if br_o > br_t else fmt
-                        except Exception as err:
-                            ColorHelper.print_red(err) 
-                if mediaType == 'awebm':
-                    if not bool(maxAudio):
-                        maxAudio = fmt
-                    else:
-                        try:
-                            if ('bitrate' in maxAudio) and ('bitrate' in fmt):
-                                br_o = maxAudio['bitrate']
-                                br_t = fmt['bitrate']
-                                maxAudio = maxAudio if br_o > br_t else fmt
-                        except Exception as err:
-                            ColorHelper.print_red(err)  
+            maxAudio, maxVideo = self.getMaxAV(formats)
+            if (not bool(maxAudio)) or (not bool(maxVideo)):
+                ColorHelper.print_red('get avconfig fail, v=' + v)
+                return False
             try:
                 tmpPath = self.workpath + 'tmp/'
                 if not os.path.exists(tmpPath):
@@ -293,6 +260,54 @@ class YoutubeDownloader:
             self.markNotDownloading(v)
             self.curTaskNum = self.curTaskNum - 1
         return True
+
+    def getMaxAV(self, formats):
+        maxAudio, maxVideo = self.getMaxAVWithExt(formats, 'webm')
+        if (not bool(maxAudio)) or (not bool(maxVideo)):
+            maxAudio, maxVideo = self.getMaxAVWithExt(formats, 'mp4')
+        if (not bool(maxAudio)) or (not bool(maxVideo)):
+            maxAudio, maxVideo = self.getMaxAVWithExt(formats, '')
+        return maxAudio, maxVideo
+
+    def getMaxAVWithExt(self, formats, ext): 
+        maxAudio = {}         
+        maxVideo = {}
+        for fmt in formats:
+            mediaType = None  
+            if fmt['mimeType'].startswith('audio/' + ext):
+                mediaType = 'a'
+            if fmt['mimeType'].startswith('video/' + ext):
+                mediaType = 'v'
+            if not mediaType:
+                continue
+            if mediaType == 'a':
+                if not bool(maxAudio):
+                    maxAudio = fmt
+                else:
+                    try:
+                        if ('bitrate' in maxAudio) and ('bitrate' in fmt):
+                            br_o = maxAudio['bitrate']
+                            br_t = fmt['bitrate']
+                            maxAudio = maxAudio if br_o > br_t else fmt
+                    except Exception as err:
+                        ColorHelper.print_red(err)  
+            if mediaType == 'v':
+                if not bool(maxVideo):
+                    maxVideo = fmt
+                else:
+                    try:
+                        pixel_o = maxVideo['width'] * maxVideo['height']
+                        pixel_t = fmt['width'] * fmt['height']
+                        if pixel_o < pixel_t:
+                            maxVideo = fmt
+                        elif pixel_o == pixel_t:
+                            if ('bitrate' in maxVideo) and ('bitrate' in fmt):
+                                br_o = maxVideo['bitrate']
+                                br_t = fmt['bitrate']
+                                maxVideo = maxVideo if br_o > br_t else fmt
+                    except Exception as err:
+                        ColorHelper.print_red(err) 
+        return maxAudio, maxVideo
 
     def getV(self, url):
         query = urlsplit(url).query
