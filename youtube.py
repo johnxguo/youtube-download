@@ -1,8 +1,17 @@
 #author: johnxguo
 #date: 2018-11-7
 
-from youtubecmd import YoutubeCmd
+import os
 
-# auto install requirements
+# requirements:
+# 1. os.system('pip freeze > requirements.txt')
+# 2. os.system('pip install -r requirements.txt')
+# 3. download webdriver(ChromeDriver) from https://sites.google.com/a/chromium.org/chromedriver/downloads
+# 4. copy the webdriver.exe to the path where the chrome.exe put 
+# 5. config the above path to google.py/chromedriver
+# 6. config your proxy to session.py/proxy
+# 7. config your download configs in config.json
+
+from youtubecmd import YoutubeCmd
 
 YoutubeCmd('config.json').start()
