@@ -26,7 +26,8 @@ for filepath in filelist:
         continue
     thumbnail = filepath[:-5] + '.png'
     if os.path.isfile(thumbnail):
+        print('continue')
         continue
     cmd = cmdtmpl % (filepath, thumbnail)
     os.system(cmd)
-    print('%4.1f%%  '%(counter/len(filelist)) + filepath + ' done')
+    print('%4.1f%% %d/%d '%(counter * 100 /len(filelist), counter, len(filelist)) + filepath + ' done')
