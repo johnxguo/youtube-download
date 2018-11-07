@@ -1,7 +1,10 @@
 {
-	"maxTaskNum": 10,
+	"username": "",
+	"password": "",
+	"maxTaskNum": 50,
 	"maxTaskCounter":1000,
 	"workpath": "./videos/",
 	"login": true,
-	"cmd": "1.vlst"
+	"cmd": "1.vlst",
+	"proxy": "http://127.0.0.1:1080"
 }

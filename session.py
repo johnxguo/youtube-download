@@ -8,12 +8,12 @@ import time
 from speed import SpeedHelper
 
 class Session:
-    def __init__(self, cookies, headers):
+    def __init__(self, cookies, headers, proxy = None):
         self.cacheSize = 3000000
         self.chuckSize = 1000000
         self.cookies = cookies
         self.headers = headers
-        self.proxy = 'http://127.0.0.1:1080'
+        self.proxy = proxy
         self.session = asyncio.get_event_loop().run_until_complete(self.create_session(cookies, headers))
 
     def __del__(self):

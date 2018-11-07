@@ -19,6 +19,7 @@ class YoutubeCmd:
 
     def start(self):
         param = (None, None)
+        proxy = None
         if not self.config:
             self.config = {}
         else:
@@ -26,7 +27,8 @@ class YoutubeCmd:
                 param = (self.config['username'], self.config['password'])
             elif self.config['login']:
                 param = self.inputUserInfo()
-        self.session = YoutubeSession(*param)
+            proxy = self.config['proxy']
+        self.session = YoutubeSession(*param, proxy)
         if not self.session.username:
             ColorHelper.print_red('init failed! will exit.')
             exit()
@@ -84,6 +86,8 @@ class YoutubeCmd:
                         config['workpath'] = './'
                     if not 'login' in config:
                         config['login'] = None
+                    if not 'proxy' in config:
+                        config['proxy'] = None
                     self.config = config
         except Exception as err:
             ColorHelper.print_red(r'load config[%s] fail, err:%s' % (self.configFile, str(err)))

@@ -29,9 +29,8 @@ class GoogleLoginHelper:
         chrome_options.add_argument('--disable-gpu')
         chrome_options.add_argument('--log-level=3')
         chrome_options.add_argument('user-agent="Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36"')
-        chromedriver = r'C:\Chrome\Application\chromedriver.exe'
-        os.environ["webdriver.chrome.driver"] = chromedriver
-        self.driver = webdriver.Chrome(chromedriver, chrome_options=chrome_options)
+        #chromedriver = os.environ["webdriver.chrome.driver"]
+        self.driver = webdriver.Chrome(chrome_options=chrome_options)
 
     def __del__(self):
         if self.driver:

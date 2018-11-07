@@ -7,7 +7,7 @@ from console_color.color_helper import ColorHelper
 from session import Session
 
 class YoutubeSession:
-    def __init__(self, username = None, password = None):
+    def __init__(self, username = None, password = None, proxy = None):
         headers = {
             'Connection':'keep-alive',
             'user-agent' : 'Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36',
@@ -17,7 +17,7 @@ class YoutubeSession:
         self.password = password
         if password:
             cookies = YoutubeLoginHelper(username, password).login().getCookie()
-            self.session = Session(cookies, headers)
+            self.session = Session(cookies, headers, proxy)
             self.username = username if cookies else None
         elif not username:
             self.username = 'nobody'
