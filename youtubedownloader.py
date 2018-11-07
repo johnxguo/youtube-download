@@ -227,7 +227,7 @@ class YoutubeDownloader:
         if not self.checkDownloadState(v):
             return
         self.markDownloading(v)
-        print('begin download v=' + v)
+        ColorHelper.print_cyan(r' ------ begin download v=%s ------ '%(v))
         self.curTaskNum = self.curTaskNum + 1
         try:
             url_v = self.prefix_v + v
