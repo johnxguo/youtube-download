@@ -278,6 +278,10 @@ class YoutubeDownloader:
                 os.remove(audioPath)
             except Exception as err:
                 ColorHelper.print_red(err)
+        except Exception as err:
+            ColorHelper.print_red(err)
+            ColorHelper.print_red('get avconfig fail, v=' + v)
+            return False
         finally:
             self.markNotDownloading(v)
             self.curTaskNum = self.curTaskNum - 1
