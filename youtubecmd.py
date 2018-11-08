@@ -78,7 +78,7 @@ class YoutubeCmd:
     def loadConfig(self):
         try:
             if os.path.isfile(self.configFile):
-                with open(self.configFile, 'r') as f:
+                with open(self.configFile, 'r', encoding='utf-8') as f:
                     config = json.loads(f.read())
                     if not 'username' in config:
                         config['username'] = None
