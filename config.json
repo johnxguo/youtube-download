@@ -1,8 +1,8 @@
 {
 	"username": "johnxacm@gmail.com",
 	"password": "1",
-	"maxTaskNum": 16,
-	"maxTaskCounter":1000,
+	"maxTaskNum": 20,
+	"maxTaskCounter":10000,
 	"workpath": "D:/图片/youtube/",
 	"login": true,
 	"cmd": "1.vlst",
