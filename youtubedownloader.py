@@ -17,7 +17,10 @@ class YoutubeDownloader:
         self.session = session
         self.curTaskNum = 0
         self.maxTaskNum = 5
+        self.fetchHandlerCounter = 0
         self.taskCounter = 0
+        self.totalCount = 0
+        self.doneCount = 0
         self.maxTaskCounter = sys.maxsize
         self.workpath = './'
         self.donefile = './youtube.donelist'
@@ -29,7 +32,7 @@ class YoutubeDownloader:
         self.continueurl = r'https://www.youtube.com/browse_ajax?ctoken=%s&continuation=%s&itct=%s'
         self.downloadinglist = []
         self.taskmap = {}
-        self.speedHelper = SpeedHelper(5)
+        self.speedHelper = SpeedHelper(100)
         self.colorPrints = [ColorHelper.print_red,
                             ColorHelper.print_green,
                             ColorHelper.print_blue,
@@ -63,6 +66,8 @@ class YoutubeDownloader:
         return self
 
     async def downloadPath(self, path):
+        if path.startswith('#'):
+            return True
         if path == '.':
             await self.addAllSelfPlayLists()
             return True
@@ -218,13 +223,27 @@ class YoutubeDownloader:
             return False
         return True
 
+    def increaseTotalCount(self):
+        self.totalCount = self.totalCount + 1
+        return self.totalCount
+
+    def increaseDoneCount(self):
+        self.doneCount = self.doneCount + 1
+        return self.doneCount
+
+    def increaseFetchHandlerCounter(self):
+        self.fetchHandlerCounter = self.fetchHandlerCounter + 1
+        return self.fetchHandlerCounter
+
     async def downloadV(self, v):
         if not self.checkDownloadState(v):
             return
+        self.increaseTotalCount()
         while self.curTaskNum >= self.maxTaskNum:
             await asyncio.sleep(2)
         # double check
         if not self.checkDownloadState(v):
+            self.increaseDoneCount()
             return
         self.markDownloading(v)
         ColorHelper.print_cyan(r' ------ begin download v=%s ------ '%(v))
@@ -247,12 +266,15 @@ class YoutubeDownloader:
                 ColorHelper.print_red('get avconfig fail, v=' + v)
                 return False
             try:
+                ext = '.webm'
+                if maxAudio['mimeType'].startswith('audio/mp4'):
+                    ext = '.mp4'
                 tmpPath = self.workpath + 'tmp/'
                 if not os.path.exists(tmpPath):
                     os.makedirs(tmpPath)
-                videoPath = tmpPath + filename + '-video.webm'
-                audioPath = tmpPath + filename + '-audio.webm'
-                outptPath = self.workpath + filename + '.webm'
+                videoPath = tmpPath + filename + '-video' + ext
+                audioPath = tmpPath + filename + '-audio' + ext
+                outptPath = self.workpath + filename + ext
                 videoUrl = maxVideo['url']
                 audioUrl = maxAudio['url']
                 self.taskmap[videoUrl] = self.taskCounter
@@ -269,7 +291,7 @@ class YoutubeDownloader:
                     ColorHelper.print_purple('merging audio and video..')
                     os.system(mergeCmd)
                     self.markDownloaded(v)
-                    ColorHelper.print_green(outptPath + ' is done')
+                    ColorHelper.print_green(outptPath + ' is done, %4.1f%%  %d/%d'%((self.doneCount + 1)*100/self.totalCount, self.doneCount + 1, self.totalCount))
                 else:
                     ColorHelper.print_red(r'network err! v=%s download fail!'%(v))
                 self.taskmap.pop(videoUrl)
@@ -283,6 +305,7 @@ class YoutubeDownloader:
             ColorHelper.print_red('get avconfig fail, v=' + v)
             return False
         finally:
+            self.increaseDoneCount()
             self.markNotDownloading(v)
             self.curTaskNum = self.curTaskNum - 1
         return True
@@ -386,6 +409,8 @@ class YoutubeDownloader:
 
     def fetchHandler(self, url, path, size, size_all, size_done, speed):
         self.speedHelper.mark(size)
+        if self.increaseFetchHandlerCounter() % 100:
+            return
         colorPrint = self.colorPrints[self.urlIndex(url) % len(self.colorPrints)]
         filename = os.path.split(path)[1]
         purename = filename[filename.find(' - ') + 3 : filename.rfind(' - ')] + filename[filename.rfind('-'):]
@@ -398,8 +423,7 @@ class YoutubeDownloader:
             counter = counter + 1
         logname = logname + ' '*(namelength - self.halfWidthLen(logname))
         ColorHelper.print_blue('downloading | ', False)
-        # percent
-        log = logname + ' | ' + '%8s' % self.sizeByte2Str(size_done) + ' /' + '%8s' % self.sizeByte2Str(int(size_all)) + ' | ' + self.sizeByte2Str(speed) + '/s'
+        log = logname + ' | ' + "%4.1f%% "%(size_done*100/size_all) + '%8s' % self.sizeByte2Str(size_done) + ' /' + '%8s' % self.sizeByte2Str(int(size_all)) + ' | ' + self.sizeByte2Str(speed) + '/s'
         colorPrint(log, False)
         ColorHelper.print_purple(' | ', False)
         allSpeedLog = self.sizeByte2Str(self.speedHelper.speed()) + '/s'

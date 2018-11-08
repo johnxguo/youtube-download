@@ -36,7 +36,6 @@ class Session:
             with open(path, 'wb') as file:
                 async with self.session.get(url, proxy=self.proxy) as rsp:
                     speedHelper = SpeedHelper(90, int(rsp.headers["Content-Length"]))
-                    counter = 0
                     cache = bytes()
                     lastsize = 0
                     while 1:
@@ -48,13 +47,11 @@ class Session:
                         if len(cache) > self.cacheSize:
                             file.write(cache)
                             cache = bytes()
-                        counter = counter + 1
                         speedHelper.mark(len(chuck))
-                        if counter % 100 == 0:
-                            if handler:
-                                size = speedHelper.size_done() - lastsize
-                                lastsize = speedHelper.size_done()
-                                handler(url, path, size, speedHelper.size_all(), speedHelper.size_done(), speedHelper.speed())
+                        if handler:
+                            size = speedHelper.size_done() - lastsize
+                            lastsize = speedHelper.size_done()
+                            handler(url, path, size, speedHelper.size_all(), speedHelper.size_done(), speedHelper.speed())
             return True
         except Exception as err:
             print(err)

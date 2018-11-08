@@ -1,9 +1,9 @@
 {
 	"username": "johnxacm@gmail.com",
-	"password": "",
-	"maxTaskNum": 30,
+	"password": "1",
+	"maxTaskNum": 16,
 	"maxTaskCounter":1000,
-	"workpath": "./videos/",
+	"workpath": "D:/图片/youtube/",
 	"login": true,
 	"cmd": "1.vlst",
 	"proxy": "http://127.0.0.1:1080",
