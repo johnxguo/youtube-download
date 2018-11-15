@@ -20,6 +20,7 @@ class YoutubeSession:
             self.session = Session(cookies, headers, proxy)
             self.username = username if cookies else None
         elif not username:
+            self.session = Session(None, headers, proxy)
             self.username = 'nobody'
 
     async def get(self, url:str):
