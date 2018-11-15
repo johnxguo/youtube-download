@@ -3,6 +3,7 @@
 
 import os
 import json
+import time
 from .state import LoginState
 from selenium import webdriver 
 from selenium.webdriver.common.by import By
@@ -122,6 +123,9 @@ class GoogleLoginHelper:
 
     def loadCookies(self):
         if os.path.isfile(self.cookiesFilename):
+            mtime = os.path.getmtime(self.cookiesFilename)
+            if time.time() - mtime > 86400:
+                return None
             with open(self.cookiesFilename, 'r') as f:
                 return json.loads(f.read())
         return None

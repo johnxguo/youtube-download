@@ -172,11 +172,11 @@ class YoutubeDownloader:
 
     def getContiRequestHeaders(self, info):
         headers = {
-            'X-YouTube-Variants-Checksum': info['VARIANTS_CHECKSUM'],
-            'X-Youtube-Identity-Token': info['ID_TOKEN'],
+            'X-YouTube-Variants-Checksum': str(info['VARIANTS_CHECKSUM']),
+            'X-Youtube-Identity-Token': str(info['ID_TOKEN']),
             'X-YouTube-Page-CL': str(info['PAGE_CL']),
             'X-YouTube-Client-Name': '1',
-            'X-YouTube-Client-Version': info['INNERTUBE_CONTEXT_CLIENT_VERSION'],
+            'X-YouTube-Client-Version': str(info['INNERTUBE_CONTEXT_CLIENT_VERSION']),
             'Accept-Encoding': 'gzip, deflate, br'
         }
         return headers
