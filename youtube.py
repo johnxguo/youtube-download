@@ -12,6 +12,7 @@ import os
 # 6. config your proxy to config.proxy
 # 7. config your download configs in config.json
 # 8. install ffmpeg and add to the $PATH
+# 9. pip3 install brotlipy
 
 from youtubecmd import YoutubeCmd
 
