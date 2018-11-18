@@ -227,7 +227,8 @@ class YoutubeDownloader:
         st_str = r'window["ytInitialData"] = '
         et_str = r"};"
         j = self.getConfigFromHtmlBase(html, st_str, et_str)
-        return j['contents']['twoColumnBrowseResultsRenderer']['tabs'][0]['tabRenderer']['content']['sectionListRenderer']['contents'][0]['itemSectionRenderer']['contents'][0]['playlistVideoListRenderer']
+        return j['contents']['twoColumnBrowseResultsRenderer']['tabs'][0]['tabRenderer']['content']['sectionListRenderer']\
+                ['contents'][0]['itemSectionRenderer']['contents'][0]['playlistVideoListRenderer']
 
     def getConfigFromHtml3(self, html):
         st_str = r'window.ytplayer = {};ytcfg.set('
@@ -341,15 +342,15 @@ class YoutubeDownloader:
                         os.system(mergeCmd)
                     self.markDownloaded(v)
                     ColorHelper.print_green(outptPath + ' is done, %4.1f%%  %d/%d'%((self.doneCount + 1)*100/self.totalCount, self.doneCount + 1, self.totalCount))
+                    if os.path.exists(videoPath):
+                        os.remove(videoPath)
+                    if os.path.exists(audioPath):
+                        os.remove(audioPath)
                 else:
                     ColorHelper.print_red(r'network err! v=%s download fail!'%(v))
                 self.taskmap.pop(videoUrl)
                 if videoUrl != audioUrl:
                     self.taskmap.pop(audioUrl)
-                if os.path.exists(videoPath):
-                    os.remove(videoPath)
-                if os.path.exists(audioPath):
-                    os.remove(audioPath)
             except Exception as err:
                 ColorHelper.print_red(err)
         except Exception as err:

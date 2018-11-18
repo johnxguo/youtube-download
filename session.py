@@ -32,10 +32,10 @@ class Session:
             return await rsp.text()
 
     async def fetch(self, url:str, path:str, handler:callable = None):
+        tmpPath = path + '.tmp'
         try:
             if os.path.exists(path):
                 return True
-            tmpPath = path + '.tmp'
             with open(tmpPath, 'wb') as file:
                 async with self.session.get(url, proxy=self.proxy) as rsp:
                     speedHelper = SpeedHelper(90, int(rsp.headers["Content-Length"]))
@@ -60,3 +60,6 @@ class Session:
         except Exception as err:
             print(err)
             return False
+        finally:
+            if os.path.exists(tmpPath):
+                os.remove(tmpPath)
