@@ -276,7 +276,9 @@ class YoutubeDownloader:
             return
         self.increaseTotalCount()
         while self.curTaskNum >= self.maxTaskNum:
-            await asyncio.sleep(2)
+            leftCount = self.totalCount - self.doneCount
+            sleepTime = 1200 if leftCount > 1200 else leftCount
+            await asyncio.sleep(sleepTime)
         # double check
         if not self.checkDownloadState(v):
             self.increaseDoneCount()

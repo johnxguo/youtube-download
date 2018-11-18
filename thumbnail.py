@@ -1,6 +1,8 @@
 import os
 import sys
 
+# 生成size做前缀的缩略图（到子目录），然后可以根据缩略图名删除（移动）原视频
+
 if len(sys.argv) != 2:
     print('参数错误')
     exit()
