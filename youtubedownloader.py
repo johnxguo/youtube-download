@@ -107,7 +107,7 @@ class YoutubeDownloader:
                     if await self.downloadV(v):
                         return
                 else:
-                    ColorHelper.print_yellow('exist! v=' + v)
+                    ColorHelper.print_yellow('exist! v=%s'%(v), False, 1, ", " + v)
                     return
         except Exception as err:
             self.logfile(err)
@@ -143,7 +143,7 @@ class YoutubeDownloader:
                 contiHeaders = self.getContiRequestHeaders(contiHeaderInfo)
             except Exception:
                 ColorHelper.print_blue('no more')
-            contents = await self.processPlaylistInfo(info, contiHeaders)
+            contents = await self.processPlaylistInfo(0, info, contiHeaders)
             vids = [videoinfo['playlistVideoRenderer']['videoId'] for videoinfo in contents]
             ColorHelper.print_yellow(url + ' | total videos:' + str(len(vids)))
             tasks = [asyncio.ensure_future(self.downloadV(vid)) for vid in vids]
@@ -152,8 +152,11 @@ class YoutubeDownloader:
             ColorHelper.print_red(err)
             ColorHelper.print_red('get playlist fail, url=' + url)
 
-    async def processPlaylistInfo(self, info, contiHeaders):
+    async def processPlaylistInfo(self, count, info, contiHeaders):
         contents = info['contents']
+        playlistId = ''
+        if 'playlistId' in info:
+            playlistId = info['playlistId']
         try:
             contiinfo = info['continuations'][0]['nextContinuationData']
             continuation = contiinfo['continuation']
@@ -162,8 +165,8 @@ class YoutubeDownloader:
             rsp = await self.session.getWithHeaders(contiurl, contiHeaders) 
             json = self.getContiResponseJson(rsp)
             info_new = json['response']['continuationContents']['playlistVideoListContinuation']
-            contents = contents + await self.processPlaylistInfo(info_new, contiHeaders)
-            ColorHelper.print_green('contents: ' + str(len(contents)))
+            ColorHelper.print_green('analyzing playlist - %s, contents: %d' % (playlistId, (count + len(contents))))
+            contents = contents + await self.processPlaylistInfo(count + len(contents), info_new, contiHeaders)
         except Exception:
             ColorHelper.print_blue('no more')
             pass
@@ -253,10 +256,10 @@ class YoutubeDownloader:
             ColorHelper.print_purple(r'maxTaskCounter[%d] reached! v=%s' % (self.maxTaskCounter, v))
             return False
         if not self.canDownload(v):
-            ColorHelper.print_yellow('exist! v=' + v)
+            ColorHelper.print_yellow('exist! v=%s'%(v), False, 1, ", " + v)
             return False
         if self.isStop():
-            ColorHelper.print_yellow('global stop!')
+            ColorHelper.print_red('global stop!', False, 2, "stop!")
             return False
         return True
 
@@ -277,9 +280,8 @@ class YoutubeDownloader:
             return
         self.increaseTotalCount()
         while self.curTaskNum >= self.maxTaskNum:
-            leftCount = self.totalCount - self.doneCount
-            sleepTime = 1200 if leftCount > 1200 else leftCount
-            await asyncio.sleep(sleepTime)
+            leftCount = int(self.totalCount - self.doneCount) % 100
+            await asyncio.sleep(leftCount)
         # double check
         if not self.checkDownloadState(v):
             self.increaseDoneCount()
