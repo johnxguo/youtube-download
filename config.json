@@ -1,12 +1,14 @@
 {
 	"username": "johnxacm@gmail.com",
-	"password": "",
-	"maxTaskNum": 20,
+	"password": "1",
+	"maxTaskNum": 30,
 	"maxTaskCounter":10000,
 	"workpath": "D:/图片/youtube/",
 	"login": true,
 	"cmd": "1.vlst",
 	"donelist": "youtube.donelist",
+	"errlist": "youtube.errlist",
 	"logsfile": "youtube.logs",
-	"stopfile": "stop"
+	"stopfile": "stop",
+	"proxy": "http://127.0.0.1:1080"
 }

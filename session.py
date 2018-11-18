@@ -33,7 +33,10 @@ class Session:
 
     async def fetch(self, url:str, path:str, handler:callable = None):
         try:
-            with open(path, 'wb') as file:
+            if os.path.exists(path):
+                return True
+            tmpPath = path + '.tmp'
+            with open(tmpPath, 'wb') as file:
                 async with self.session.get(url, proxy=self.proxy) as rsp:
                     speedHelper = SpeedHelper(90, int(rsp.headers["Content-Length"]))
                     cache = bytes()
@@ -52,6 +55,7 @@ class Session:
                             size = speedHelper.size_done() - lastsize
                             lastsize = speedHelper.size_done()
                             handler(url, path, size, speedHelper.size_all(), speedHelper.size_done(), speedHelper.speed())
+            os.rename(tmpPath, path)
             return True
         except Exception as err:
             print(err)

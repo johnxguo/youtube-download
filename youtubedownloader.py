@@ -1,7 +1,7 @@
 #author: johnxguo
 #date: 2018-11-7
 
-import os
+import os, shutil
 import sys
 import asyncio
 import json
@@ -11,6 +11,7 @@ from console_color.color_helper import ColorHelper
 from youtubesession import YoutubeSession
 from enum import Enum, unique
 from speed import SpeedHelper
+import xmltodict
 
 class YoutubeDownloader:
     def __init__(self, session:YoutubeSession):
@@ -24,6 +25,7 @@ class YoutubeDownloader:
         self.maxTaskCounter = sys.maxsize
         self.workpath = './'
         self.donefile = './youtube.donelist'
+        self.errfile = './youtube.errlist'
         self.logsfile = './youtube.log'
         self.stopfile = './stop'
         self.prefix_v = 'https://www.youtube.com/watch?v='
@@ -55,6 +57,10 @@ class YoutubeDownloader:
 
     def setDonefile(self, donefile):
         self.donefile = donefile
+        return self
+
+    def setErrfile(self, errfile):
+        self.errfile = errfile
         return self
 
     def setLogsfile(self, logsfile):
@@ -162,6 +168,36 @@ class YoutubeDownloader:
             ColorHelper.print_blue('no more')
             pass
         return contents
+        
+    async def getRepresentations(self, dashmpd):
+        if not dashmpd:
+            return None
+        try:
+            xml_data = await self.session.get(dashmpd)
+            j = xmltodict.parse(xml_data)
+            adaptationSet = j['MPD']['Period']['AdaptationSet']
+            formats = []
+            for adaptation in adaptationSet:
+                if not '@mimeType' in adaptation:
+                    continue
+                mimeType = adaptation['@mimeType']
+                if 'Representation' in adaptation:
+                    representation = adaptation['Representation']
+                    for rep in  representation:
+                        fmt = {'mimeType':mimeType}
+                        if '@width' in rep:
+                            fmt['width'] = int(rep['@width'])
+                        if '@height' in rep:
+                            fmt['height'] = int(rep['@height'])
+                        if '@bandwidth' in rep:
+                            fmt['bitrate'] = int(rep['@bandwidth'])
+                        if 'BaseURL' in rep:
+                            fmt['url'] = rep['BaseURL']
+                        formats.append(fmt)
+            return formats
+        except Exception as err:
+            ColorHelper.print_red(err)
+            return None
 
     def getContiResponseJson(self, rsp):
         j = json.loads(rsp)
@@ -185,7 +221,7 @@ class YoutubeDownloader:
         st_str = r'ytplayer.config = '
         et_str = r"};"
         j = self.getConfigFromHtmlBase(html, st_str, et_str)
-        return json.loads(j['args']['player_response'])
+        return json.loads(j['args']['player_response']), j['args']['dashmpd'] if 'dashmpd' in j['args'] else None
     
     def getConfigFromHtml2(self, html):
         st_str = r'window["ytInitialData"] = '
@@ -251,24 +287,31 @@ class YoutubeDownloader:
         try:
             url_v = self.prefix_v + v
             html_v = await self.session.get(url_v)
-            player_response = self.getConfigFromHtml1(html_v)
+            player_response, dashmpd = self.getConfigFromHtml1(html_v)
             if not player_response:
                 ColorHelper.print_red('get config fail, v=' + v)
                 return False
+            representations = await self.getRepresentations(dashmpd)
             videoDetails = player_response['videoDetails']
-            formats = player_response['streamingData']['formats'] + player_response['streamingData']['adaptiveFormats']
+            formats = player_response['streamingData']['formats']
+            if 'adaptiveFormats' in player_response['streamingData']:
+                formats = formats + player_response['streamingData']['adaptiveFormats']
+            if representations:
+                formats = formats + representations
             title = videoDetails['title']
             pureTitle = self.removeInvalidFilenameChars(title)
             channel = videoDetails['channelId']
             filename = channel + ' - ' + pureTitle + ' - ' + v
             maxAudio, maxVideo = self.getMaxAV(formats)
-            if (not bool(maxAudio)) or (not bool(maxVideo)):
-                ColorHelper.print_red('get avconfig fail, v=' + v)
+            if not bool(maxVideo):
+                self.onVErr(v)
                 return False
             try:
                 ext = '.webm'
-                if maxAudio['mimeType'].startswith('audio/mp4'):
+                if maxVideo['mimeType'].startswith('video/mp4'):
                     ext = '.mp4'
+                if not bool(maxAudio):
+                    maxAudio = maxVideo
                 tmpPath = self.workpath + 'tmp/'
                 if not os.path.exists(tmpPath):
                     os.makedirs(tmpPath)
@@ -282,27 +325,34 @@ class YoutubeDownloader:
                 self.taskmap[audioUrl] = self.taskCounter
                 self.taskCounter = self.taskCounter + 1
                 tasks = [
-                    asyncio.ensure_future(self.session.fetch(videoUrl, videoPath, self.fetchHandler)),
-                    asyncio.ensure_future(self.session.fetch(audioUrl, audioPath, self.fetchHandler))
+                    asyncio.ensure_future(self.session.fetch(videoUrl, videoPath, self.fetchHandler))
                 ]
+                if videoUrl != audioUrl:
+                    tasks.append(asyncio.ensure_future(self.session.fetch(audioUrl, audioPath, self.fetchHandler)))
                 await asyncio.wait(tasks)
-                if tasks[0].result() and tasks[1].result():
-                    mergeCmd = 'ffmpeg -loglevel quiet -nostdin -y -i \"' + audioPath + '\" -i \"' + videoPath + '\" -acodec copy -vcodec copy \"' + outptPath + '\"'
+                if self.isResultSucc(tasks):
                     ColorHelper.print_purple('merging audio and video..')
-                    os.system(mergeCmd)
+                    if videoUrl == audioUrl:
+                        shutil.move(videoPath, outptPath)
+                    else:
+                        mergeCmd = 'ffmpeg -loglevel quiet -nostdin -y -i \"' + audioPath + '\" -i \"' + videoPath + '\" -acodec copy -vcodec copy \"' + outptPath + '\"'
+                        os.system(mergeCmd)
                     self.markDownloaded(v)
                     ColorHelper.print_green(outptPath + ' is done, %4.1f%%  %d/%d'%((self.doneCount + 1)*100/self.totalCount, self.doneCount + 1, self.totalCount))
                 else:
                     ColorHelper.print_red(r'network err! v=%s download fail!'%(v))
                 self.taskmap.pop(videoUrl)
-                self.taskmap.pop(audioUrl)
-                os.remove(videoPath)
-                os.remove(audioPath)
+                if videoUrl != audioUrl:
+                    self.taskmap.pop(audioUrl)
+                if os.path.exists(videoPath):
+                    os.remove(videoPath)
+                if os.path.exists(audioPath):
+                    os.remove(audioPath)
             except Exception as err:
                 ColorHelper.print_red(err)
         except Exception as err:
             ColorHelper.print_red(err)
-            ColorHelper.print_red('get avconfig fail, v=' + v)
+            self.onVErr(v)
             return False
         finally:
             self.increaseDoneCount()
@@ -310,16 +360,30 @@ class YoutubeDownloader:
             self.curTaskNum = self.curTaskNum - 1
         return True
 
+    def onVErr(self, v):
+        self.markErred(v)
+        ColorHelper.print_red('get avconfig fail, v=%s, 视频已被删除'%(v))
+
+    def isResultSucc(self, tasks):
+        return len([task for task in tasks if not task.result()]) == 0
+
     def getMaxAV(self, formats):
-        maxAudio, maxVideo = self.getMaxAVWithExt(formats, 'webm')
-        if (not bool(maxAudio)) or (not bool(maxVideo)):
-            maxAudio, maxVideo = self.getMaxAVWithExt(formats, 'mp4')
-        if (not bool(maxAudio)) or (not bool(maxVideo)):
-            maxAudio, maxVideo = self.getMaxAVWithExt(formats, '')
-        return maxAudio, maxVideo
+        maxAudio_webm, maxVideo_webm = self.getMaxAVWithExt(formats, 'webm')
+        maxAudio_mp4, maxVideo_mp4 = self.getMaxAVWithExt(formats, 'mp4')
+        if not bool(maxVideo_webm):
+            return maxAudio_mp4, maxVideo_mp4
+        elif not bool(maxVideo_mp4):
+            return maxAudio_webm, maxVideo_webm
+        else:
+            pixel_webm = maxVideo_webm['width'] * maxVideo_webm['height']
+            pixel_mp4 = maxVideo_mp4['width'] * maxVideo_mp4['height']
+            if pixel_webm < pixel_mp4:
+                return maxAudio_mp4, maxVideo_mp4
+            else:
+                return maxAudio_webm, maxVideo_webm
 
     def getMaxAVWithExt(self, formats, ext): 
-        maxAudio = {}         
+        maxAudio = {}
         maxVideo = {}
         for fmt in formats:
             mediaType = None  
@@ -364,6 +428,8 @@ class YoutubeDownloader:
         
     def isExist(self, v):
         try:
+            if not os.path.isfile(self.donefile):
+                return False
             with open(self.donefile, 'r') as file:
                 return (v + '\n') in file.readlines()
         except Exception as err:
@@ -373,6 +439,23 @@ class YoutubeDownloader:
     def markDownloaded(self, v):
         try:
             with open(self.donefile, 'a') as file:
+                file.write(v + '\n')
+        except Exception as err:
+            ColorHelper.print_red(err)
+
+    def isErred(self, v):
+        try:
+            if not os.path.isfile(self.errfile):
+                return False
+            with open(self.errfile, 'r') as file:
+                return (v + '\n') in file.readlines()
+        except Exception as err:
+            ColorHelper.print_red(err)
+        return False
+    
+    def markErred(self, v):
+        try:
+            with open(self.errfile, 'a') as file:
                 file.write(v + '\n')
         except Exception as err:
             ColorHelper.print_red(err)
@@ -390,7 +473,7 @@ class YoutubeDownloader:
             self.downloadinglist.remove(v)
 
     def canDownload(self, v):
-        return (not self.isExist(v)) and (not self.isDownloading(v))
+        return (not self.isExist(v)) and (not self.isErred(v)) and (not self.isDownloading(v))
 
     def isStop(self):
         if self.stopfile:
@@ -423,7 +506,8 @@ class YoutubeDownloader:
             counter = counter + 1
         logname = logname + ' '*(namelength - self.halfWidthLen(logname))
         ColorHelper.print_blue('downloading | ', False)
-        log = logname + ' | ' + "%4.1f%% "%(size_done*100/size_all) + '%8s' % self.sizeByte2Str(size_done) + ' /' + '%8s' % self.sizeByte2Str(int(size_all)) + ' | ' + self.sizeByte2Str(speed) + '/s'
+        log = logname + ' | ' + "%4.1f%% "%(size_done*100/size_all) + '%8s' % self.sizeByte2Str(size_done) + \
+              ' /' + '%8s' % self.sizeByte2Str(int(size_all)) + ' | ' + self.sizeByte2Str(speed) + '/s'
         colorPrint(log, False)
         ColorHelper.print_purple(' | ', False)
         allSpeedLog = self.sizeByte2Str(self.speedHelper.speed()) + '/s'

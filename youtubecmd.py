@@ -41,6 +41,8 @@ class YoutubeCmd:
             self.downloader.setWorkPath(self.config['workpath'])
         if self.config['donelist']:
             self.downloader.setDonefile(self.config['donelist'])
+        if self.config['errlist']:
+            self.downloader.setErrfile(self.config['errlist'])
         if self.config['logsfile']:
             self.downloader.setLogsfile(self.config['logsfile'])
         if self.config['stopfile']:
@@ -96,6 +98,8 @@ class YoutubeCmd:
                         config['proxy'] = None
                     if not 'donelist' in config:
                         config['donelist'] = None
+                    if not 'errlist' in config:
+                        config['errlist'] = None
                     if not 'stopfile' in config:
                         config['stopfile'] = None
                     if not 'logsfile' in config:
