@@ -14,6 +14,14 @@ import os
 # 8. install ffmpeg and add to the $PATH
 # 9. pip3 install brotlipy
 
+
+# todo: 1.config里面设置最大下载的文件size，超过的忽略并log到日志文件，人工查验
+#       2.通用缓存，playlist和logincache都接入
+#       3.用size做缩略图的prefix，以此排序做人工查验，缩略图生成到子目录，人工查验完成之后自动删除对应的视频并重命名缩略图（此过程可重复执行）
+#       4.从现有文件生成filelist，用donelist和filelist可以生成ignorelist，若donelist丢失，可以根据ignorelist重新下载。
+#       5.用机器学习对缩略图做聚类，以便更好的做人工去重。
+#       6.直接下载channel，媒体库，我关注的所有媒体库
+
 from youtubecmd import YoutubeCmd
 
 YoutubeCmd('config.json').start()
