@@ -1,8 +1,8 @@
 #author: johnxguo
 #date: 2018-10-31
 
-from google import GoogleLoginHelper
-from youtube import YoutubeLoginHelper
+from .google import GoogleLoginHelper
+from .youtube import YoutubeLoginHelper
 
 class LoginTest:
     def __init__(self):

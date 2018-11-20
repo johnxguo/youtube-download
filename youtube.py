@@ -21,7 +21,9 @@ import os
 #       4.从现有文件生成filelist，用donelist和filelist可以生成ignorelist，若donelist丢失，可以根据ignorelist重新下载。
 #       5.用机器学习对缩略图做聚类，以便更好的做人工去重。
 #       6.直接下载channel，媒体库，我关注的所有媒体库
+#       7.方块符号进度条▉▉▉▉
+#       8.密码显示星号
 
-from youtubecmd import YoutubeCmd
+from downloader.youtubecmd import YoutubeCmd
 
 YoutubeCmd('config.json').start()
