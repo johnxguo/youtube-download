@@ -5,7 +5,7 @@
 	"maxTaskCounter":1000000,
 	"workpath": "D:/图片/youtube/",
 	"login": true,
-	"cmd": "2.vlst",
+	"cmd": "tmp.vlst",
 	"donelist": "youtube.donelist",
 	"errlist": "youtube.errlist",
 	"logsfile": "youtube.logs",

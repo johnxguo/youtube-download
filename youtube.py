@@ -23,6 +23,7 @@ import os
 #       6.直接下载channel，媒体库，我关注的所有媒体库
 #       7.方块符号进度条▉▉▉▉
 #       8.密码显示星号
+#       9.config.cmd 多个命令串行执行，分号分隔
 
 from downloader.youtubecmd import YoutubeCmd
 
