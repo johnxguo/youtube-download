@@ -25,8 +25,8 @@ class YoutubeDownloader:
         self.maxTaskCounter = sys.maxsize
         self.workpath = './'
         self.donefile = './youtube.donelist'
-        self.errfile = './youtube.errlist'
-        self.logsfile = './youtube.log'
+        self.errfile = ''
+        self.logsfile = ''
         self.stopfile = './stop'
         self.prefix_v = 'https://www.youtube.com/watch?v='
         self.prefix_channel = 'https://www.youtube.com/channel/'
@@ -450,18 +450,20 @@ class YoutubeDownloader:
 
     def isErred(self, v):
         try:
-            if not os.path.isfile(self.errfile):
-                return False
-            with open(self.errfile, 'r') as file:
-                return (v + '\n') in file.readlines()
+            if os.path.isfile(self.errfile):
+                if not os.path.isfile(self.errfile):
+                    return False
+                with open(self.errfile, 'r') as file:
+                    return (v + '\n') in file.readlines()
         except Exception as err:
             Console.print_red(err)
         return False
     
     def markErred(self, v):
         try:
-            with open(self.errfile, 'a') as file:
-                file.write(v + '\n')
+            if self.errfile:
+                with open(self.errfile, 'a') as file:
+                    file.write(v + '\n')
         except Exception as err:
             Console.print_red(err)
 
@@ -492,8 +494,9 @@ class YoutubeDownloader:
     def logfile(self, content, pr = True):
         if pr:
             print(content)
-        with open(self.logsfile, 'a', encoding='utf-8') as f:
-            f.write(str(content) + '\n')
+        if self.logsfile:
+            with open(self.logsfile, 'a', encoding='utf-8') as f:
+                f.write(str(content) + '\n')
 
     def fetchHandler(self, url, path, size, size_all, size_done, speed):
         self.speedHelper.mark(size)

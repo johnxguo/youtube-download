@@ -33,11 +33,15 @@ class Session:
 
     async def fetch(self, url:str, path:str, handler:callable = None):
         tmpPath = path + '.tmp'
+        startsize = 0
         try:
             if os.path.exists(path):
                 return True
-            with open(tmpPath, 'wb') as file:
-                async with self.session.get(url, proxy=self.proxy) as rsp:
+            if os.path.exists(tmpPath):
+                startsize = os.path.getsize(tmpPath)
+            with open(tmpPath, 'wb' if startsize==0 else 'ab') as file:
+                headers = self.headers if startsize == 0 else {**self.headers, 'Range':f'bytes={startsize}-'}
+                async with self.session.get(url, proxy=self.proxy, headers=headers) as rsp:
                     speedHelper = SpeedHelper(90, int(rsp.headers["Content-Length"]))
                     cache = bytes()
                     lastsize = 0
@@ -54,7 +58,7 @@ class Session:
                         if handler:
                             size = speedHelper.size_done() - lastsize
                             lastsize = speedHelper.size_done()
-                            handler(url, path, size, speedHelper.size_all(), speedHelper.size_done(), speedHelper.speed())
+                            handler(url, path, size, speedHelper.size_all() + startsize, speedHelper.size_done() + startsize, speedHelper.speed())
             os.rename(tmpPath, path)
             return True
         except Exception as err:
@@ -62,4 +66,5 @@ class Session:
             return False
         finally:
             if os.path.exists(tmpPath):
-                os.remove(tmpPath)
+               # os.remove(tmpPath)
+               pass

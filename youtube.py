@@ -24,6 +24,8 @@ import os
 #       7.方块符号进度条▉▉▉▉
 #       8.密码显示星号
 #       9.config.cmd 多个命令串行执行，分号分隔
+#       10.断点续传
+#       列出封面图片  决定是否下载
 
 from downloader.youtubecmd import YoutubeCmd
 

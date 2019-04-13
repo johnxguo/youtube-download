@@ -11,9 +11,8 @@ def GenTmpVlst(tmppath, vlst):
     urls = {*()}
 
     for filename in files:
-        if not filename.endswith('.tmp'):
-            v = filename[filename.rfind(' - ') + 3 : filename.rfind('-')]
-            urls.add(baseUrl % (v))
+        v = filename[filename.rfind(' - ') + 3 : filename.rfind('-')]
+        urls.add(baseUrl % (v))
 
     with open(vlst, 'w', encoding='utf-8') as f:
         for url in urls:
