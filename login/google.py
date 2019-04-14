@@ -124,7 +124,7 @@ class GoogleLoginHelper:
     def loadCookies(self):
         if os.path.isfile(self.cookiesFilename):
             mtime = os.path.getmtime(self.cookiesFilename)
-            if time.time() - mtime > 86400:
+            if time.time() - mtime > 864000:
                 return None
             with open(self.cookiesFilename, 'r') as f:
                 return json.loads(f.read())

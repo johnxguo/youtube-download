@@ -16,7 +16,7 @@ class Thumbnail:
         if not bool(filelist):
             print('Thumbnail: empty folder!')
             return
-        cmdtmpl = r'ffmpeg -loglevel quiet -ss 00:00:10 -nostdin -y -i "%s" -filter:v scale="1024:-1" -vframes 1 "%s"'
+        cmdtmpl = r'ffmpeg -loglevel quiet -ss 00:00:10 -nostdin -y -i "%s" -filter:v scale="%s" -vframes 1 "%s"'
         counter = 0
         for filename in filelist:
             counter = counter + 1
@@ -27,9 +27,24 @@ class Thumbnail:
             if os.path.isfile(thumbpath):
                 print('%4.1f%% %d/%d '%(counter * 100 /len(filelist), counter, len(filelist)) + ' continue')
                 continue
-            cmd = cmdtmpl % (self.workpath, thumbpath)
+            rso = self.getResolution(self.workpath + filename)
+            l = 1600
+            scale = f'{l}:-1' if rso['w'] > rso['h'] else f'-1:{l}'
+            cmd = cmdtmpl % (self.workpath + filename, scale, thumbpath)
             os.system(cmd)
             print('%4.1f%% %d/%d '%(counter * 100 /len(filelist), counter, len(filelist)) + thumbname + ' done')
+
+    def getResolution(self, path):
+        cmd = f'ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "{path}"'
+        try:        
+            with os.popen(cmd) as f:
+                res = f.read()
+                rt = res.split('x')
+                ret = {'w':1, 'h':1}
+                ret = {'w':int(rt[0]), 'h':int(rt[1])}
+        except Exception : 
+            pass
+        return ret
     
     def genThumbnailWithSize(self):
         
@@ -43,7 +58,7 @@ class Thumbnail:
     
     def moveVideos(self):
         pass
-
+ 
     def listfile(self, path):
         filelist = []
         if os.path.isdir(path):
@@ -58,12 +73,12 @@ class ThumbnailCmd:
     def handleCmd(self, args):
         opt = '-t'
         workpath = '.'
-        if len(sys.argv) == 2:
-            workpath = sys.argv[0]
+        if len(args) == 2:
+            workpath = args[1]
             pass
-        elif len(sys.argv) == 3:
-            opt = sys.argv[0]
-            workpath = sys.argv[1]
+        elif len(args) == 3:
+            workpath = args[1]
+            opt = args[2]
             pass
         else:
             print('参数错误')
@@ -83,10 +98,3 @@ class ThumbnailCmd:
             print('参数错误')
             return
 
-
-
-
-
-
-    
-Thumbnail(sys.argv)

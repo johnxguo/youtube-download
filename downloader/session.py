@@ -59,8 +59,11 @@ class Session:
                             size = speedHelper.size_done() - lastsize
                             lastsize = speedHelper.size_done()
                             handler(url, path, size, speedHelper.size_all() + startsize, speedHelper.size_done() + startsize, speedHelper.speed())
-            os.rename(tmpPath, path)
-            return True
+            size = os.path.getsize(tmpPath)
+            if size > 0:
+                os.rename(tmpPath, path)
+                return True
+            return False
         except Exception as err:
             print(err)
             return False

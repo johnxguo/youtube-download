@@ -392,6 +392,8 @@ class YoutubeDownloader:
         maxVideo = {}
         for fmt in formats:
             mediaType = None  
+            if 'type' in fmt and fmt['type'] == 'FORMAT_STREAM_TYPE_OTF':
+                continue
             if fmt['mimeType'].startswith('audio/' + ext):
                 mediaType = 'a'
             if fmt['mimeType'].startswith('video/' + ext):
