@@ -107,7 +107,7 @@ class YoutubeDownloader:
                     if await self.downloadV(v):
                         return
                 else:
-                    Console.print_yellow('exist! v=%s'%(v), False, 1, ", " + v)
+                    #Console.print_yellow('exist! v=%s'%(v), False, 1, ", " + v)
                     return
         except Exception as err:
             self.logfile(err)
@@ -256,7 +256,7 @@ class YoutubeDownloader:
             Console.print_purple(r'maxTaskCounter[%d] reached! v=%s' % (self.maxTaskCounter, v))
             return False
         if not self.canDownload(v):
-            Console.print_yellow('exist! v=%s'%(v), False, 1, ", " + v)
+            #Console.print_yellow('exist! v=%s'%(v), False, 1, ", " + v)
             return False
         if self.isStop():
             Console.print_red('global stop!', False, 2, "stop!")
