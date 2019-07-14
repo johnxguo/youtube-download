@@ -400,6 +400,8 @@ class YoutubeDownloader:
         maxAudio = {}
         maxVideo = {}
         for fmt in formats:
+            if ext == 'webm' and 'mime=audio/mp4' in fmt['url']:
+                continue
             mediaType = None  
             if 'type' in fmt and fmt['type'] == 'FORMAT_STREAM_TYPE_OTF':
                 continue
@@ -572,8 +574,6 @@ class YoutubeDownloader:
                 c = c + 1
             if g[0] == 'url':
                 k['url'] =  urllib.parse.unquote(urllib.parse.unquote(g[1]))
-                print(k['url'])
-                print('\n')
                 c = c + 1
             if c == 3:
                 c = 0
