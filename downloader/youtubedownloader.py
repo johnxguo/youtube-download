@@ -5,6 +5,7 @@ import os, shutil
 import sys
 import asyncio
 import json
+import urllib.parse
 from urllib.parse import urlsplit
 from urllib.parse import parse_qs
 from console.console import Console
@@ -12,6 +13,7 @@ from .youtubesession import YoutubeSession
 from .speed import SpeedHelper
 from enum import Enum, unique
 import xmltodict
+import re
 
 class YoutubeDownloader:
     def __init__(self, session:YoutubeSession):
@@ -224,7 +226,9 @@ class YoutubeDownloader:
         st_str = r'ytplayer.config = '
         et_str = r"};"
         j = self.getConfigFromHtmlBase(html, st_str, et_str)
-        return json.loads(j['args']['player_response']), j['args']['dashmpd'] if 'dashmpd' in j['args'] else None
+        return json.loads(j['args']['player_response']), \
+               j['args']['dashmpd'] if 'dashmpd' in j['args'] else None, \
+               j['args']['adaptive_fmts'] if 'adaptive_fmts' in j['args'] else None
     
     def getConfigFromHtml2(self, html):
         st_str = r'window["ytInitialData"] = '
@@ -292,17 +296,22 @@ class YoutubeDownloader:
         try:
             url_v = self.prefix_v + v
             html_v = await self.session.get(url_v)
-            player_response, dashmpd = self.getConfigFromHtml1(html_v)
+            player_response, dashmpd, adaptFmt = self.getConfigFromHtml1(html_v)
             if not player_response:
                 Console.print_red('get config fail, v=' + v)
                 return False
             representations = await self.getRepresentations(dashmpd)
             videoDetails = player_response['videoDetails']
-            formats = player_response['streamingData']['formats']
-            if 'adaptiveFormats' in player_response['streamingData']:
-                formats = formats + player_response['streamingData']['adaptiveFormats']
+            formats = []
+            streamingData = player_response['streamingData']
+            if 'formats' in streamingData:
+                formats += streamingData['formats']
+            if 'adaptiveFormats' in streamingData:
+                formats += streamingData['adaptiveFormats']
             if representations:
-                formats = formats + representations
+                formats += representations
+            if adaptFmt:
+                formats += self.parse_adaptive_fmts(adaptFmt)
             title = videoDetails['title']
             pureTitle = self.removeInvalidFilenameChars(title)
             channel = videoDetails['channelId']
@@ -543,3 +552,31 @@ class YoutubeDownloader:
             return "%5.2f" % (size / (1024 * 1024)) + 'M'
         else:
             return "%5d" % (size / 1024) + 'K'
+
+    def parse_adaptive_fmts(self, adaptfmts):
+        if not adaptfmts:
+            return None
+        fmts = re.split('[&,]', adaptfmts)
+        ret = []
+        k = {}
+        c = 0
+        for l in fmts:
+            g = l.split('=')
+            if g[0] == 'size':
+                s = g[1].split('x')
+                k['width'] = int(s[0])
+                k['height'] = int(s[1])
+                c = c + 1
+            if g[0] == 'type':
+                k['mimeType'] =  urllib.parse.unquote(g[1])
+                c = c + 1
+            if g[0] == 'url':
+                k['url'] =  urllib.parse.unquote(urllib.parse.unquote(g[1]))
+                print(k['url'])
+                print('\n')
+                c = c + 1
+            if c == 3:
+                c = 0
+                ret.append(k)
+                k = {}
+        return ret

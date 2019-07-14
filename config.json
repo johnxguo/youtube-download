@@ -1,6 +1,6 @@
 {
 	"username": "johnxacm@gmail.com",
-	"password": "xxx",
+	"password": "",
 	"maxTaskNum": 50,
 	"maxTaskCounter":1000000,
 	"workpath": "D:/图片/youtube/",
@@ -8,7 +8,6 @@
 	"cmd": "2.vlst",
 	"donelist": "youtube.donelist",
 	"errlist": "",
-	"logsfile": "",
-	"stopfile": "stop",
-	"proxy":"http://127.0.0.1:1080"
+	"logsfile": "1.txt",
+	"stopfile": "stop"
 }

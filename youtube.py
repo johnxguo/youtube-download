@@ -4,7 +4,7 @@
 import os
 
 # requirements:
-# 1. os.system('pip freeze > requirements.txt')
+# 1. os.system('pip freeze > requirements.txt')  //  pipreqs ./ --encoding=utf8
 # 2. os.system('pip install -r requirements.txt')
 # 3. download webdriver(ChromeDriver) from https://sites.google.com/a/chromium.org/chromedriver/downloads
 # 4. copy the webdriver.exe to the path where the chrome.exe put 
@@ -25,7 +25,8 @@ import os
 #       8.密码显示星号
 #       9.config.cmd 多个命令串行执行，分号分隔
 #       10.断点续传
-#       列出封面图片  决定是否下载(size大于400m的)
+#       11.列出封面图片  决定是否下载(size大于400m的)
+#       12.参考youtube-dl，使用页面原始js进行url解密
 
 from downloader.youtubecmd import YoutubeCmd
 

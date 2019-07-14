@@ -21,12 +21,12 @@ class GoogleLoginHelper:
             return
         self.signin_url = 'https://accounts.google.com/signin/v2/identifier?&flowName=GlifWebSignIn&flowEntry=ServiceLogin&cid=1&navigationDirection=forward'
         self.state = LoginState.logout
-        self.waitDomTimeout = 10
+        self.waitDomTimeout = 30
         self.waitDomFrq = 0.2
         self.setUserInfo(uid, password)
         print("creating webdriver")
         chrome_options = webdriver.ChromeOptions()
-        chrome_options.add_argument('headless')
+        #chrome_options.add_argument('headless')
         chrome_options.add_argument('--disable-gpu')
         chrome_options.add_argument('--log-level=3')
         chrome_options.add_argument('user-agent="Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36"')
