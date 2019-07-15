@@ -69,5 +69,6 @@ class Session:
             return False
         finally:
             if os.path.exists(tmpPath):
-               # os.remove(tmpPath)
-               pass
+                if os.path.getsize(tmpPath) == 0:
+                    os.remove(tmpPath)
+
