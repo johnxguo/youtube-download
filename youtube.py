@@ -26,7 +26,10 @@ import os
 #       9.config.cmd 多个命令串行执行，分号分隔
 #       10.断点续传
 #       11.列出封面图片  决定是否下载(size大于400m的)
-#       12.参考youtube-dl，使用页面原始js进行url解密
+#       12.参考youtube-dl，使用页面原始js进行url解密 
+#          https://github.com/ytdl-org/youtube-dl/blob/791d2e81172826ef645b62c6961c65f8c2cb2a4f/youtube_dl/extractor/youtube.py
+#          _decrypt_signature
+#          _extract_signature_function
 
 from downloader.youtubecmd import YoutubeCmd
 

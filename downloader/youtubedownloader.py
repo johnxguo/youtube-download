@@ -396,18 +396,19 @@ class YoutubeDownloader:
             else:
                 return maxAudio_webm, maxVideo_webm
 
+    def checkFmtMatch(self, url, av, ext, mt):
+        return (f'mime={av}/{ext}' in url) or ((not ('mime={av}/' in url)) and mt.startswith('{av}/{ext}'))
+
     def getMaxAVWithExt(self, formats, ext): 
         maxAudio = {}
         maxVideo = {}
         for fmt in formats:
-            if ext == 'webm' and 'mime=audio/mp4' in fmt['url']:
-                continue
             mediaType = None  
             if 'type' in fmt and fmt['type'] == 'FORMAT_STREAM_TYPE_OTF':
                 continue
-            if fmt['mimeType'].startswith('audio/' + ext):
+            if self.checkFmtMatch(fmt['url'], 'audio', ext, fmt['mimeType']):
                 mediaType = 'a'
-            if fmt['mimeType'].startswith('video/' + ext):
+            if self.checkFmtMatch(fmt['url'], 'video', ext, fmt['mimeType']):
                 mediaType = 'v'
             if not mediaType:
                 continue
