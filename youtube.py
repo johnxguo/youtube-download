@@ -32,5 +32,7 @@ import os
 #          _extract_signature_function
 
 from downloader.youtubecmd import YoutubeCmd
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 
 YoutubeCmd('config.json').start()

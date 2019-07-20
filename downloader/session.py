@@ -41,7 +41,7 @@ class Session:
                 startsize = os.path.getsize(tmpPath)
             with open(tmpPath, 'wb' if startsize==0 else 'ab') as file:
                 headers = self.headers if startsize == 0 else {**self.headers, 'Range':f'bytes={startsize}-'}
-                async with self.session.get(url, proxy=self.proxy, headers=headers) as rsp:
+                async with self.session.get(url, proxy=self.proxy, headers=headers, verify_ssl=False) as rsp:
                     speedHelper = SpeedHelper(90, int(rsp.headers["Content-Length"]))
                     cache = bytes()
                     lastsize = 0
