@@ -11,6 +11,7 @@ from urllib.parse import parse_qs
 from console.console import Console
 from .youtubesession import YoutubeSession
 from .speed import SpeedHelper
+from sig.sig import Sig
 from enum import Enum, unique
 import xmltodict
 import re
@@ -36,6 +37,7 @@ class YoutubeDownloader:
         self.continueurl = r'https://www.youtube.com/browse_ajax?ctoken=%s&continuation=%s&itct=%s'
         self.downloadinglist = []
         self.taskmap = {}
+        self.sig = Sig()
         self.speedHelper = SpeedHelper(100)
         self.colorPrints = [Console.print_red,
                             Console.print_green,
@@ -279,6 +281,25 @@ class YoutubeDownloader:
         self.fetchHandlerCounter = self.fetchHandlerCounter + 1
         return self.fetchHandlerCounter
 
+    def getPlayerUrl(self, html): 
+        st_str = r'"PLAYER_JS_URL":"'
+        et_str = r'"'
+        st = html.find(st_str)
+        if st == -1:
+            return None
+        st = st + len(st_str)
+        et = html.find(et_str, st)
+        url = html[st:et]
+        url = url.replace("\\", "")
+        url = 'https://www.youtube.com' + url
+        return url
+
+    def checkSig(self, obj, v, player_url):
+        if 's' in obj:
+            s = obj['s']
+            sig = self.sig.getSig(v, player_url, s)
+            obj['url'] += f"&sig={sig}"
+
     async def downloadV(self, v):
         if not self.checkDownloadState(v):
             return
@@ -303,6 +324,7 @@ class YoutubeDownloader:
             representations = await self.getRepresentations(dashmpd)
             videoDetails = player_response['videoDetails']
             formats = []
+            player_url = self.getPlayerUrl(html_v)
             streamingData = player_response['streamingData']
             if 'formats' in streamingData:
                 formats += streamingData['formats']
@@ -312,6 +334,7 @@ class YoutubeDownloader:
                 formats += representations
             if adaptFmt:
                 formats += self.parse_adaptive_fmts(adaptFmt)
+
             title = videoDetails['title']
             pureTitle = self.removeInvalidFilenameChars(title)
             channel = videoDetails['channelId']
@@ -332,8 +355,13 @@ class YoutubeDownloader:
                 videoPath = tmpPath + filename + '-video' + ext
                 audioPath = tmpPath + filename + '-audio' + ext
                 outptPath = self.workpath + filename + ext
+
+                self.checkSig(maxVideo, v, player_url)
+                self.checkSig(maxAudio, v, player_url)
+
                 videoUrl = maxVideo['url']
                 audioUrl = maxAudio['url']
+
                 self.taskmap[videoUrl] = self.taskCounter
                 self.taskCounter = self.taskCounter + 1
                 self.taskmap[audioUrl] = self.taskCounter
@@ -562,22 +590,33 @@ class YoutubeDownloader:
         fmts = re.split('[&,]', adaptfmts)
         ret = []
         k = {}
-        c = 0
         for l in fmts:
             g = l.split('=')
             if g[0] == 'size':
+                if 'width' in k:
+                    ret.append(k)
+                    k = {}
                 s = g[1].split('x')
                 k['width'] = int(s[0])
                 k['height'] = int(s[1])
-                c = c + 1
-            if g[0] == 'type':
+            elif g[0] == 'type':
+                if 'mimeType' in k:
+                    ret.append(k)
+                    k = {}
                 k['mimeType'] =  urllib.parse.unquote(g[1])
-                c = c + 1
-            if g[0] == 'url':
+            elif g[0] == 'url':
+                if 'url' in k:
+                    ret.append(k)
+                    k = {}
                 k['url'] =  urllib.parse.unquote(urllib.parse.unquote(g[1]))
-                c = c + 1
-            if c == 3:
-                c = 0
-                ret.append(k)
-                k = {}
+            elif g[0] == 's':
+                if 's' in k:
+                    ret.append(k)
+                    k = {}
+                k['s'] =  urllib.parse.unquote(g[1])
+            else:
+                if g[0] in k:
+                    ret.append(k)
+                    k = {}
+                k[g[0]] =  g[1]
         return ret
