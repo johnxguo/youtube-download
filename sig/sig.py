@@ -2,8 +2,9 @@ from .jsinterp import JSInterpreter
 import re
 import os
 import requests
+import urllib3
 
-requests.packages.urllib3.disable_warnings()
+urllib3.disable_warnings()
 
 NO_DEFAULT = object()
 
