@@ -1,11 +1,11 @@
 {
 	"username": "johnxacm@gmail.com",
 	"password": "x",
-	"maxTaskNum": 50,
+	"maxTaskNum": 30,
 	"maxTaskCounter":1000000,
 	"workpath": "D:/图片/youtube/",
 	"login": true,
-	"cmd": "tmp.vlst",
+	"cmd": "3.vlst",
 	"donelist": "youtube.donelist",
 	"errlist": "",
 	"logsfile": "1.txt",
