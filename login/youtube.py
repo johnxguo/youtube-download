@@ -16,12 +16,15 @@ class YoutubeLoginHelper:
     def login(self):
         if self.isLoginOk():
             return self
-        self.googleLoginHelper.login().turnTo(self.initPageUrl)
+        self.googleLoginHelper.login().turnTo(self.initPageUrl, self.isLoginComplete)
         if self.isLoginOk():
             print('login youtube succ!')
         else:
             print('login youtube fail!')
         return self
+
+    def isLoginComplete(self, a):
+       return self.googleLoginHelper.checkLogin('.youtube.com')
     
     def isLoginOk(self):
         return self.googleLoginHelper.isLoginOk()

@@ -3,6 +3,8 @@ import re
 import os
 import requests
 
+requests.packages.urllib3.disable_warnings()
+
 NO_DEFAULT = object()
 
 class Sig:
@@ -29,7 +31,7 @@ class Sig:
             return lambda s: initial_function([s])
 
     def _extract_signature_function(self, video_id, player_url, example_sig):
-        code = requests.get(player_url)
+        code = requests.get(player_url, verify=False)
         res = self._parse_sig_js(code.text)
         return res
 

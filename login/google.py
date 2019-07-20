@@ -98,21 +98,25 @@ class GoogleLoginHelper:
         cookies = dict(zip(names, values))
         return cookies
 
-    def turnTo(self, url:str):
+    def turnTo(self, url:str, ct):
         if url:
             print('turning to ' + url)
             self.driver.get(url)
+            WebDriverWait(self.driver, self.waitDomTimeout, self.waitDomFrq).until(ct)
         if self.isLoginOk():
             cookies = self.getCookie()
             if bool(cookies):
                 self.writeCookies(cookies)
 
     def isLoginComplete(self, a):
+        return self.checkLogin('.google.com')
+
+    def checkLogin(self, dom):
         if not self.driver:
             return False
         domains = self.driver.get_cookies()
         for domain in domains:
-            if domain['domain'] == '.google.com' and \
+            if domain['domain'] == dom and \
                domain['name'] == 'SSID':
                 return True
         return False
