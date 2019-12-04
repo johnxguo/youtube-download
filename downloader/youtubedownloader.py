@@ -427,6 +427,15 @@ class YoutubeDownloader:
     def checkFmtMatch(self, url, av, ext, mt):
         return (f'mime={av}/{ext}' in url) or ((not ('mime={av}/' in url)) and mt.startswith('{av}/{ext}'))
 
+    def getUrlFromFmt(self, fmt):
+        if 'cipher' in fmt:
+            query = parse_qs(fmt['cipher'])
+            url = query['url']
+            s = query['s']
+            fmt['s'] = s
+            return url # urllib.parse.unquote(url)
+        return fmt['url'] # urllib.parse.unquote(fmt['url'])
+
     def getMaxAVWithExt(self, formats, ext): 
         maxAudio = {}
         maxVideo = {}
@@ -436,9 +445,9 @@ class YoutubeDownloader:
                 continue
             if 'type' in fmt and fmt['type'] == 'FORMAT_STREAM_TYPE_OTF':
                 continue
-            if self.checkFmtMatch(fmt['url'], 'audio', ext, fmt['mimeType']):
+            if self.checkFmtMatch(self.getUrlFromFmt(fmt), 'audio', ext, fmt['mimeType']):
                 mediaType = 'a'
-            if self.checkFmtMatch(fmt['url'], 'video', ext, fmt['mimeType']):
+            if self.checkFmtMatch(self.getUrlFromFmt(fmt), 'video', ext, fmt['mimeType']):
                 mediaType = 'v'
             if not mediaType:
                 continue
