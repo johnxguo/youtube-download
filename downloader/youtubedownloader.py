@@ -432,7 +432,12 @@ class YoutubeDownloader:
             query = parse_qs(fmt['cipher'])
             url = query['url']
             s = query['s']
+            if isinstance(url, list):
+                url = url[0]
+            if isinstance(s, list):
+                s = s[0]
             fmt['s'] = s
+            fmt['url'] = url
             return url # urllib.parse.unquote(url)
         return fmt['url'] # urllib.parse.unquote(fmt['url'])
 
