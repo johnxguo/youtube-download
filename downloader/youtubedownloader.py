@@ -462,8 +462,8 @@ class YoutubeDownloader:
                 else:
                     try:
                         if ('bitrate' in maxAudio) and ('bitrate' in fmt):
-                            br_o = maxAudio['bitrate']
-                            br_t = fmt['bitrate']
+                            br_o = int(maxAudio['bitrate'])
+                            br_t = int(fmt['bitrate'])
                             maxAudio = maxAudio if br_o > br_t else fmt
                     except Exception as err:
                         Console.print_red(err)  
@@ -478,8 +478,8 @@ class YoutubeDownloader:
                             maxVideo = fmt
                         elif pixel_o == pixel_t:
                             if ('bitrate' in maxVideo) and ('bitrate' in fmt):
-                                br_o = maxVideo['bitrate']
-                                br_t = fmt['bitrate']
+                                br_o = int(maxVideo['bitrate'])
+                                br_t = int(fmt['bitrate'])
                                 maxVideo = maxVideo if br_o > br_t else fmt
                     except Exception as err:
                         Console.print_red(err) 
